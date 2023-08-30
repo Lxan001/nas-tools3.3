@@ -1307,19 +1307,6 @@ def telegram():
         user_name = message.get("from", {}).get("username")
         if text:
             log.info(f"收到Telegram消息：userid={user_id}, username={user_name}, text={text}")
-            # 检查权限
-            if text.startswith("/"):
-                if str(user_id) not in interactive_client.get("client").get_admin():
-                    Message().send_channel_msg(channel=SearchType.TG,
-                                               title="只有管理员才有权限执行此命令",
-                                               user_id=user_id)
-                    return '只有管理员才有权限执行此命令'
-            else:
-                if not str(user_id) in interactive_client.get("client").get_users():
-                    Message().send_channel_msg(channel=SearchType.TG,
-                                               title="你不在用户白名单中，无法使用此机器人",
-                                               user_id=user_id)
-                    return '你不在用户白名单中，无法使用此机器人'
             # 处理消息
             WebAction().handle_message_job(msg=text,
                                            in_from=SearchType.TG,
