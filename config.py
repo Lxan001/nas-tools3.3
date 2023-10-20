@@ -3,6 +3,7 @@ import shutil
 import sys
 from threading import Lock
 import ruamel.yaml
+import re
 
 # 种子名/文件名要素分隔字符
 SPLIT_CHARS = r"\.|\s+|\(|\)|\[|]|-|\+|【|】|/|～|;|&|\||#|_|「|」|~"
@@ -15,11 +16,11 @@ RMT_MEDIAEXT = ['.mp4', '.mkv', '.ts', '.iso',
                 '.rmvb', '.avi', '.mov', '.mpeg',
                 '.mpg', '.wmv', '.3gp', '.asf',
                 '.m4v', '.flv', '.m2ts', '.strm',
-                '.tp']
+                '.tp', '.f4v']
 # 支持的字幕文件后缀格式
 RMT_SUBEXT = ['.srt', '.ass', '.ssa']
 # 支持的音轨文件后缀格式
-RMT_AUDIO_TRACK_EXT = ['.mka']
+RMT_AUDIO_TRACK_EXT = ['.mka', 'flac', 'ape', 'wav']
 # 电视剧动漫的分类genre_ids
 ANIME_GENREIDS = ['16']
 # 默认过滤的文件大小，150M
@@ -48,7 +49,7 @@ FANART_TV_API_URL = 'https://webservice.fanart.tv/v3/tv/%s?api_key=d2d31f9ecabea
 # 默认背景图地址
 DEFAULT_TMDB_IMAGE = 'https://s3.bmp.ovh/imgs/2022/07/10/77ef9500c851935b.webp'
 # TMDB域名地址
-TMDB_API_DOMAINS = ['api.themoviedb.org', 'api.tmdb.org', 'tmdb.nastool.org', 't.nastool.workers.dev']
+TMDB_API_DOMAINS = ['api.themoviedb.org', 'api.tmdb.org']
 TMDB_IMAGE_DOMAIN = 'image.tmdb.org'
 # 添加下载时增加的标签，开始只监控NAStool添加的下载时有效
 PT_TAG = "NASTOOL"
@@ -183,6 +184,9 @@ class Config(object):
     def get_script_path(self):
         return os.path.join(self.get_root_path(), "scripts", "sqls")
 
+    def get_builtin_indexer_path(self):
+        return os.path.join(self.get_root_path(), "app", "indexer", "client", "builtin.py")
+
     def get_user_sites_bin_path(self):
         return os.path.join(self.get_root_path(), "web", "backend", "user.sites.bin")
 
@@ -208,7 +212,14 @@ class Config(object):
             RMT_FAVTYPE = favtype
 
     def get_tmdbapi_url(self):
-        return f"https://{self.get_config('app').get('tmdb_domain') or TMDB_API_DOMAINS[0]}/3"
+        tmdb_domain = self.get_config('app').get('tmdb_domain')
+        if tmdb_domain and isinstance(tmdb_domain, str):
+            tmdb_domain = re.sub(r'^https?://', '', tmdb_domain)
+            tmdb_domain = re.sub(r'/$', '', tmdb_domain)
+        else:
+            tmdb_domain = TMDB_API_DOMAINS[0]
+
+        return f"https://{tmdb_domain}/3"
 
     def get_tmdbimage_url(self, path, prefix="w500"):
         if not path:

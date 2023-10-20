@@ -3,6 +3,7 @@ import datetime
 import hashlib
 import random
 import re
+import os
 from urllib import parse
 
 import cn2an
@@ -108,12 +109,18 @@ class StringUtils:
             else:
                 return False
         return True
+    @staticmethod
+    def is_eng_media_name_format(word):
+        pattern = r'^[a-zA-Z]+[a-zA-Z0-9\s._:@!@]*$'
+        return bool(re.match(pattern, word))
 
     @staticmethod
     def is_int_or_float(word):
         """
         判断是否是整型或浮点型的格式
         """
+        if not word:
+            return None
         pattern = r'^[-+]?\d+(\.\d+)?$'
         return re.match(pattern, word) is not None
 
@@ -479,6 +486,30 @@ class StringUtils:
         if not data:
             return ""
         return hashlib.md5(str(data).encode()).hexdigest()
+
+    @staticmethod
+    def md5_hash_file(file_path):
+        """
+        MD5 HASH 指定文件
+        """
+        if not os.path.exists(file_path):
+            return ""
+        md5_hash = hashlib.md5()
+        with open(file_path, "rb") as file:
+            while chunk := file.read(8192):
+                md5_hash.update(chunk)
+        return md5_hash.hexdigest()
+
+    @staticmethod
+    def verify_integrity(file_path, original_md5):
+        """
+        校验文件是否匹配指定的md5
+        """
+        md5 = StringUtils.md5_hash_file(file_path)
+        if not StringUtils.is_string_and_not_empty(md5) or \
+        not StringUtils.is_string_and_not_empty(original_md5):
+            return True
+        return md5 == original_md5
 
     @staticmethod
     def str_timehours(minutes):

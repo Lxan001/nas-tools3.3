@@ -217,9 +217,11 @@ class FileTransfer:
                        r"|简[体中]?)[.\])])" \
                        r"|([\u4e00-\u9fa5]{0,3}[中双][\u4e00-\u9fa5]{0,2}[字文语][\u4e00-\u9fa5]{0,3})" \
                        r"|简体|简中" \
+                       r"|[Gg][Bb]" \
                        r"|(?<![a-z0-9])gb(?![a-z0-9])"
         _zhtw_sub_re = r"([.\[(](((zh[-_])?(hk|tw|cht|tc|TC|jptc|JPTC|cht&jpn|CHT|Cht&Jap|CHT&JAP))" \
                        r"|繁[体中]?)[.\])])" \
+                       r"|[bB][iI][gG]5" \
                        r"|繁体中[文字]|中[文字]繁体|繁体" \
                        r"|(?<![a-z0-9])big5(?![a-z0-9])"
         _eng_sub_re = r"[.\[(]eng[.\])]"
@@ -497,7 +499,8 @@ class FileTransfer:
                        episode: (EpisodeFormat, bool) = None,
                        min_filesize=None,
                        udf_flag=False,
-                       root_path=False):
+                       root_path=False,
+                       ignore_download_history=False):
         """
         识别并转移一个文件、多个文件或者目录
         :param in_from: 来源，即调用该功能的渠道
@@ -513,6 +516,7 @@ class FileTransfer:
         :param min_filesize: 过滤小文件大小的上限值
         :param udf_flag: 自定义转移标志，为True时代表是自定义转移，此时很多处理不一样
         :param root_path: 是否根目录下的文件
+        :param ignore_download_history: 是否忽略下载历史识别
         :return: 处理状态，错误信息
         """
 
@@ -548,7 +552,7 @@ class FileTransfer:
             rmt_mode = self._default_rmt_mode
 
         # 检查下载记录，是否有已识别的信息
-        if not tmdb_info:
+        if not tmdb_info and not ignore_download_history:
             download_info = self.dbhelper.get_download_history_by_path(in_path)
             if not download_info and os.path.isfile(in_path):
                 download_info = self.dbhelper.get_download_history_by_path(os.path.dirname(in_path))
@@ -698,7 +702,9 @@ class FileTransfer:
                         log.error("【Rmt】%s 无法识别媒体信息！" % file_name)
                     continue
                 # 当前文件大小
-                media.size = os.path.getsize(file_item)
+                media.size = 0
+                if os.path.exists(file_item):
+                    media.size = os.path.getsize(file_item)
                 # 目的目录，有输入target_dir时，往这个目录放
                 if target_dir:
                     dist_path = target_dir
